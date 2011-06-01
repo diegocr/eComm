@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+  <Description about="urn:mozilla:install-manifest">
+    <em:id>{52a7f893-d228-412e-9b28-bc61491462f6}</em:id>
+    <em:type>2</em:type>
+    <em:name>Encrypted Communication</em:name>
+    <em:version>1.0</em:version>
+    <em:creator>Diego Casorran</em:creator>
+    <em:contributor>Chris Veness</em:contributor>
+    <em:description>Encrypts messages in forms to be transmitted in a confidential way, mainly to send E-Mails with sensitive data in a safe way.</em:description>
+    <em:targetApplication>
+      <Description>
+	    <!-- Firefox -->
+        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+        <em:minVersion>4.0</em:minVersion>
+        <em:maxVersion>5.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+  </Description>
+</RDF>
