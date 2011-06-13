@@ -1,0 +1,12 @@
+
+
+1.1  Jun 13 2011
+	
+	* gContextMenu.target might be null...
+	
+	* Fixed Warning: assignment to undeclared variable ctrTxt
+
+
+1.0  Jun 1 2011
+
+	* First Public Release

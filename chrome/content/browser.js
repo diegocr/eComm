@@ -59,10 +59,12 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				popup.addEventListener('popupshowing',this,false);
 				break;
 			case 'popupshowing':
+				if(!gContextMenu||!gContextMenu.target)
+					break;
 				let ta = (gContextMenu.target.nodeName == 'TEXTAREA'),
 					hec = !!this.hasEncryptedContent(gContextMenu.target);
-				document.getElementById('ecomm-encrypt').hidden = !ta /* || hec */;
-				document.getElementById('ecomm-decrypt').hidden = !hec;
+				gContextMenu.showItem('ecomm-encrypt', ta /* || !hec */);
+				gContextMenu.showItem('ecomm-decrypt', hec);
 			default:break;
 		}
 	},
@@ -162,7 +164,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 			a = {
 				label:a + ' Communication',
 				id: 'ecomm-' + a.toLowerCase(),
-				oncommand: 'eComm.handleCommand(this)',
+				oncommand: 'window.diegocr.eComm.handleCommand(this)',
 				class: 'menuitem-iconic',
 				image: 'chrome://ecomm/skin/logo16.png',
 			};
@@ -483,8 +485,8 @@ Aes.Ctr.decrypt = function (ciphertext, password)
 	key = key.concat(key.slice(0, nBytes - 16)); // expand key to 16/24/32 bytes long
 	
 	// recover nonce from 1st 8 bytes of ciphertext
-	var counterBlock = new Array(8);
-	ctrTxt = ciphertext.slice(0, 8);
+	var counterBlock = new Array(8),
+		ctrTxt = ciphertext.slice(0, 8);
 	for (var i = 0; i < 8; i++)
 		counterBlock[i] = ctrTxt.charCodeAt(i);
 	
@@ -590,5 +592,7 @@ Utf8.decode = function (strUtf)
 	return strUni;
 }
 
-window.eComm = eComm;
+if(!("diegocr" in window))
+	window.diegocr = {};
+window.diegocr.eComm = eComm;
 window.addEventListener('load', eComm, false);})();
