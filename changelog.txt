@@ -1,4 +1,14 @@
 
+1.2  Jul 22 2011
+	
+	* Improved startup handling.
+	
+	* HTML/BODY elements with the designMode attribute set to "on" should work
+	  now as well, which are commonly used by certain web-mail clients and/or
+	  to send html-formatted messages.
+	
+	Thanks to Jennifer B. and Alexander L. for their help testing.
+
 
 1.1  Jun 13 2011
 	

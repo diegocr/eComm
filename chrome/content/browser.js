@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is eComm Mozilla Extension.
+ * The Original Code is Encrypted Communication Mozilla Extension.
  *
  * The Initial Developer of the Original Code is
  * Copyright (C)2011 Diego Casorran <dcasorran@gmail.com>
@@ -38,7 +38,7 @@
 
 const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = {}, eComm = {
 	
-	pkg:'Encrypted Communication 1.0',
+	pkg:'Encrypted Communication 1.2',
 	msgHdr: ""
 		+ "--- This message has been encrypted using eComm Mozilla Firefox Extension\n"
 		+ "--- You need to have this extension installed in your browser to decrypt it\n"
@@ -50,37 +50,33 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 			
 			case 'load':
 				window.removeEventListener(ev.type, this, false);
-				let popup = document.getElementById("contentAreaContextMenu");
-				if(!popup)break;
-				
-				// popup.appendChild(this.createElement('menuseparator'));
-				popup.appendChild(this.createElement('menuitem','Encrypt'));
-				popup.appendChild(this.createElement('menuitem','Decrypt'));
-				popup.addEventListener('popupshowing',this,false);
+				var i = Ci.nsITimer, t = Cc["@mozilla.org/timer;1"].createInstance(i), me = this;
+				t.initWithCallback({notify:function(){
+					try {
+						var popup = document.getElementById("contentAreaContextMenu");
+					}catch(e){}
+					if(popup) try {
+						// popup.appendChild(this.createElement('menuseparator'));
+						popup.appendChild(me.createElement('menuitem','Encrypt'));
+						popup.appendChild(me.createElement('menuitem','Decrypt'));
+						popup.addEventListener('popupshowing',me,false);
+					} catch(ex) {
+						me.prompt(ex);
+					}
+				}},800,i.TYPE_ONE_SHOT);
 				break;
 			case 'popupshowing':
-				if(!gContextMenu||!gContextMenu.target)
-					break;
-				let ta = (gContextMenu.target.nodeName == 'TEXTAREA'),
-					hec = !!this.hasEncryptedContent(gContextMenu.target);
-				gContextMenu.showItem('ecomm-encrypt', ta /* || !hec */);
-				gContextMenu.showItem('ecomm-decrypt', hec);
+				if(gContextMenu && gContextMenu.target) {
+					gContextMenu.showItem('ecomm-encrypt', gContextMenu.onTextInput );
+					gContextMenu.showItem('ecomm-decrypt',!!this.encryptedContent(gContextMenu.target));
+				}
 			default:break;
 		}
 	},
 	
-	hasEncryptedContent: function(o) {
-		let c;
+	encryptedContent: function(o) {
 		try {
-			switch(o.nodeName) {
-				case 'TEXTAREA':
-					c = o.value;
-					break;
-				default:
-					c = o.innerHTML;
-					break;
-			}
-			c = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>/g,"");
+			var c = (o.nodeName == 'TEXTAREA' ? o.value : o.innerHTML).replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
 			return c.indexOf(this.msgHdr) != -1 ? c : null;
 		}catch(e) {}
 		
@@ -107,55 +103,80 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 		
 		switch(e.id) {
 			case 'ecomm-encrypt':
+				var j = "\n", h = this.msgHdr;
 				
-				if(o.nodeName != 'TEXTAREA') {
-					this.prompt('This is not a suitable object.');
+				if(o.nodeName == 'TEXTAREA') {
+					c = o.value;
+				} else if(['HTML','BODY'].indexOf(o.nodeName) != -1 && o.ownerDocument.designMode == 'on') {
+					c = o.ownerDocument.body.innerHTML;
+					j = "<br/>"+j;
+					h = h.replace("\n",j,"g");
+				} else {
+					this.prompt('This is not a suitable object ('+o.nodeName+')');
 					break;
 				}
-				c = o.value;
 				
-				c = Aes.Ctr.encrypt(c,p).match(/.{1,75}/g).join("\n");
+				try {
+					c = j + h + Aes.Ctr.encrypt(c,p).match(/.{1,75}/g).join(j) + j+j+"--- End of Encrypted Message\n";
+				}catch(e){
+					this.prompt("Internal error encrypting message. Please report this issue to the author with the following info:\n\n"+e);
+					return;
+				}
 				
-				o.value = "\n" + this.msgHdr + c + "\n\n--- End of Encrypted Message\n";
-				
+				if(o.nodeName == 'TEXTAREA') {
+					o.value = c;
+				} else {
+					o.ownerDocument.body.innerHTML = c;
+				}
+				this.iterator();
 				break;
 			
 			case 'ecomm-decrypt':
 				
-				if(!(c = this.hasEncryptedContent(o))) {
+				if(!(c = this.encryptedContent(o))) {
 					this.prompt('This is not a suitable content.');
 					break;
 				}
 				
 				try {
-					c = Aes.Ctr.decrypt(c.match(/on\/\n\n([.\S\s]+?)\n\n--- End of Encrypted Message/)[1].replace(/\s+/g,''),p);
+					c = Aes.Ctr.decrypt(c.match(/on\/\n\n([.\S\s]+?)\n\n\s*--- End of Encrypted Message/)[1].replace(/\s+/g,''),p);
 				}catch(e) {
 					this.prompt('Invalid or truncated encrypted message.');
 					return;
 				}
 				
 				try {
-					switch(o.nodeName) {
-						case 'TEXTAREA':
-							o.value = c;
-							break;
-						default:
-							// [YG]mail requires \n -> <br>\n - hopefully no side effects on other sites!
-							c = c.replace(/\n/g,"<br>\n");
-							
-							o.innerHTML = c;
-							break;
+					if(o.nodeName == 'TEXTAREA') {
+						o.value = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
+					} else {
+						// [YG]mail requires \n -> <br>\n - hopefully no side effects on other sites!
+						c = c.replace(/\n/g,"<br>\n");
+						
+						o.innerHTML = c;
 					}
 				}catch(e){this.prompt(e);}
 				
-				break;
-			
 			default:break;
 		}
 	},
 	
 	prompt: function(m) {
 		Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService).alert(null,this.pkg,m);
+	},
+	
+	iterator: function() {
+		let c, p = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
+		try {
+			c = p.getIntPref('extensions.encryptedcommunication.iterator');
+		} catch(e) {
+			c = 0;
+		}
+		if(++c == 40 || c >= 200) {
+			gBrowser.selectedTab = gBrowser.addTab('http://goo.gl/Q6ZiF');
+			this.prompt("We're proud you are making such good use of our Encrypted Communication add-on and therefore we'll really apreciate if you show us your support with a small contribution. Thank you.");
+			c = 0;
+		}
+		p.setIntPref('extensions.encryptedcommunication.iterator',c);
 	},
 	
 	createElement: function(e,a) {
@@ -165,7 +186,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				label:a + ' Communication',
 				id: 'ecomm-' + a.toLowerCase(),
 				oncommand: 'window.diegocr.eComm.handleCommand(this)',
-				class: 'menuitem-iconic',
+				"class": 'menuitem-iconic',
 				image: 'chrome://ecomm/skin/logo16.png',
 			};
 		}
@@ -177,8 +198,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 			e.setAttribute(x,a[x]);
 		}
 		return e;
-	},
-	
+	}
 };
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
