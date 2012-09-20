@@ -1,4 +1,13 @@
 
+1.3  Jan 13 2012
+	
+	* Fixed an issue caused from some webmail services which sends the mails
+	  applying word-wrapping and thus the recipient was unable to decrypt
+	  the message.
+
+	Thanks to JF Mayer for reporting the issue.
+
+
 1.2  Jul 22 2011
 	
 	* Improved startup handling.

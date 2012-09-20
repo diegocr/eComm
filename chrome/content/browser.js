@@ -38,7 +38,7 @@
 
 const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = {}, eComm = {
 	
-	pkg:'Encrypted Communication 1.2',
+	pkg:'Encrypted Communication 1.3',
 	msgHdr: ""
 		+ "--- This message has been encrypted using eComm Mozilla Firefox Extension\n"
 		+ "--- You need to have this extension installed in your browser to decrypt it\n"
@@ -49,21 +49,18 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 		switch(ev.type) {
 			
 			case 'load':
+				var self = this;
 				window.removeEventListener(ev.type, this, false);
-				var i = Ci.nsITimer, t = Cc["@mozilla.org/timer;1"].createInstance(i), me = this;
-				t.initWithCallback({notify:function(){
+				window.setTimeout(function(){
 					try {
 						var popup = document.getElementById("contentAreaContextMenu");
-					}catch(e){}
-					if(popup) try {
-						// popup.appendChild(this.createElement('menuseparator'));
-						popup.appendChild(me.createElement('menuitem','Encrypt'));
-						popup.appendChild(me.createElement('menuitem','Decrypt'));
-						popup.addEventListener('popupshowing',me,false);
+						popup.appendChild(self.createElement('menuitem','Encrypt'));
+						popup.appendChild(self.createElement('menuitem','Decrypt'));
+						popup.addEventListener('popupshowing',self,false);
 					} catch(ex) {
-						me.prompt(ex);
+						self.prompt(ex);
 					}
-				}},800,i.TYPE_ONE_SHOT);
+				},911);
 				break;
 			case 'popupshowing':
 				if(gContextMenu && gContextMenu.target) {
@@ -75,9 +72,10 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 	},
 	
 	encryptedContent: function(o) {
+		function T(t) t.replace(/\s+/g,' ').trim();
 		try {
 			var c = (o.nodeName == 'TEXTAREA' ? o.value : o.innerHTML).replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
-			return c.indexOf(this.msgHdr) != -1 ? c : null;
+			return T(c).indexOf(T(this.msgHdr)) != -1 ? c : null;
 		}catch(e) {}
 		
 		return false;
@@ -124,7 +122,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				}
 				
 				if(o.nodeName == 'TEXTAREA') {
-					o.value = c;
+					o.value = o.textContent = c;
 				} else {
 					o.ownerDocument.body.innerHTML = c;
 				}
@@ -147,7 +145,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				
 				try {
 					if(o.nodeName == 'TEXTAREA') {
-						o.value = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
+						o.value = o.textContent = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
 					} else {
 						// [YG]mail requires \n -> <br>\n - hopefully no side effects on other sites!
 						c = c.replace(/\n/g,"<br>\n");
