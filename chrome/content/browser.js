@@ -38,11 +38,11 @@
 
 const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = {}, eComm = {
 	
-	pkg:'Encrypted Communication 1.3',
+	pkg:'Encrypted Communication 1.4',
 	msgHdr: ""
 		+ "--- This message has been encrypted using eComm Mozilla Firefox Extension\n"
 		+ "--- You need to have this extension installed in your browser to decrypt it\n"
-		+ "--- https://addons.mozilla.org/en-US/firefox/addon/encrypted-communication/\n\n",
+		+ "--- https://addons.mozilla.org/addon/encrypted-communication/\n\n",
 	
 	handleEvent: function(ev) {
 		
@@ -71,14 +71,15 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 		}
 	},
 	
-	encryptedContent: function(o) {
-		function T(t) t.replace(/\s+/g,' ').trim();
+	encryptedContent: function(o,i) {
+		let result = !1, T = function(t) t.replace(/(?:<\/?p>|\s|https:\/\/.*?d-c)+/gi,' ').trim();
 		try {
-			var c = (o.nodeName == 'TEXTAREA' ? o.value : o.innerHTML).replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
-			return T(c).indexOf(T(this.msgHdr)) != -1 ? c : null;
+			var c = (o.nodeName == 'TEXTAREA' ? o.value : o.innerHTML).replace(/(?:\<br\s*\/?\s*\>\n?|\<\/?p\>)/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
+			result = (function(c,m) ~c.indexOf(T(m)) && ~c.indexOf('--- E') ? {c:c,o:o} : null)(T(c),this.msgHdr);
+			if(!result && !i && o.nodeName != 'TEXTAREA') result = this.encryptedContent(o.parentNode,!0);
 		}catch(e) {}
 		
-		return false;
+		return result;
 	},
 	
 	handleCommand: function(e) {
@@ -90,12 +91,15 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 			pwd2 = {value: ""},
 			chck = {value:true};
 		
-		if(!s.promptPassword(null,this.pkg, "Enter Password:", pwd1, null, chck)
-		|| !s.promptPassword(null,this.pkg,"Verify Password:", pwd2, null, chck)) return;
+		if(!s.promptPassword(null,this.pkg, "Enter Password:", pwd1, null, chck)) return;
 		
-		if(pwd1.value !== pwd2.value) {
-			this.prompt('These passwords does not match.');
-			return;
+		if(e.id === 'ecomm-encrypt') {
+			if(!s.promptPassword(null,this.pkg,"Verify Password:", pwd2, null, chck)) return;
+			
+			if(pwd1.value !== pwd2.value) {
+				this.prompt('These passwords does not match.');
+				return;
+			}
 		}
 		p = pwd1.value;
 		
@@ -135,11 +139,13 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 					this.prompt('This is not a suitable content.');
 					break;
 				}
+				o = c.o;
+				c = c.c;
 				
 				try {
-					c = Aes.Ctr.decrypt(c.match(/on\/\n\n([.\S\s]+?)\n\n\s*--- End of Encrypted Message/)[1].replace(/\s+/g,''),p);
+					c = Aes.Ctr.decrypt(c.match(/on\/\s*([\S\s]+?)\s*--- End of Encrypted Message/)[1].replace(/\s+/g,''),p);
 				}catch(e) {
-					this.prompt('Invalid or truncated encrypted message.');
+					this.prompt('Invalid or truncated encrypted message.\n\n'+e.message);
 					return;
 				}
 				
