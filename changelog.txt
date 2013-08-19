@@ -1,4 +1,11 @@
 
+1.5  Aug 19 2013
+
+	* Added support for elements with the 'contenteditable' attribute set.
+	
+	* Security fix to ensure no html is injected after decrypting...
+
+
 1.4  Aug 11 2013
 
 	* Fixed decryption over Facebook.

@@ -38,7 +38,7 @@
 
 const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = {}, eComm = {
 	
-	pkg:'Encrypted Communication 1.4',
+	pkg:'Encrypted Communication 1.5.0',
 	msgHdr: ""
 		+ "--- This message has been encrypted using eComm Mozilla Firefox Extension\n"
 		+ "--- You need to have this extension installed in your browser to decrypt it\n"
@@ -49,18 +49,21 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 		switch(ev.type) {
 			
 			case 'load':
-				var self = this;
 				window.removeEventListener(ev.type, this, false);
 				window.setTimeout(function(){
 					try {
-						var popup = document.getElementById("contentAreaContextMenu");
-						popup.appendChild(self.createElement('menuitem','Encrypt'));
-						popup.appendChild(self.createElement('menuitem','Decrypt'));
-						popup.addEventListener('popupshowing',self,false);
+						let popup = document.getElementById("contentAreaContextMenu");
+						popup.appendChild(this.createElement('menuitem','Encrypt'));
+						popup.appendChild(this.createElement('menuitem','Decrypt'));
+						popup.addEventListener('popupshowing',this,false);
 					} catch(ex) {
-						self.prompt(ex);
+						this.prompt(ex);
 					}
-				},911);
+				}.bind(this),911);
+				if("@mozilla.org/parserutils;1" in Cc) {
+					let u = Cc["@mozilla.org/parserutils;1"].getService(Ci.nsIParserUtils);
+					this.nohtml = function(s) u.convertToPlainText(''+s,0,0).trim();
+				}
 				break;
 			case 'popupshowing':
 				if(gContextMenu && gContextMenu.target) {
@@ -69,6 +72,8 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				}
 			default:break;
 		}
+		
+		ev = undefined;
 	},
 	
 	encryptedContent: function(o,i) {
@@ -80,6 +85,10 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 		}catch(e) {}
 		
 		return result;
+	},
+	
+	nohtml: function(m) {
+		return m && (''+m).replace(/<\/?\w[^>]*>/g,'') || '';
 	},
 	
 	handleCommand: function(e) {
@@ -105,7 +114,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 		
 		switch(e.id) {
 			case 'ecomm-encrypt':
-				var j = "\n", h = this.msgHdr;
+				var j = "\n", h = this.msgHdr, m = 0;
 				
 				if(o.nodeName == 'TEXTAREA') {
 					c = o.value;
@@ -113,6 +122,11 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 					c = o.ownerDocument.body.innerHTML;
 					j = "<br/>"+j;
 					h = h.replace("\n",j,"g");
+				} else if(o.hasAttribute('contenteditable') && o.getAttribute('contenteditable') === 'true') {
+					c = o.innerHTML;
+					j = "<br/>"+j;
+					h = h.replace("\n",j,"g");
+					m = 1;
 				} else {
 					this.prompt('This is not a suitable object ('+o.nodeName+')');
 					break;
@@ -127,6 +141,8 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				
 				if(o.nodeName == 'TEXTAREA') {
 					o.value = o.textContent = c;
+				} else if(m) {
+					o.innerHTML = c;
 				} else {
 					o.ownerDocument.body.innerHTML = c;
 				}
@@ -150,8 +166,11 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				}
 				
 				try {
+					c = this.nohtml(c);
+					
 					if(o.nodeName == 'TEXTAREA') {
-						o.value = o.textContent = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<[^>]+\>|&nbsp;/g,"");
+						// o.value = o.textContent = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<\/?\w[^>]+\>|&nbsp;/g,"");
+						o.value = o.textContent = c;
 					} else {
 						// [YG]mail requires \n -> <br>\n - hopefully no side effects on other sites!
 						c = c.replace(/\n/g,"<br>\n");
