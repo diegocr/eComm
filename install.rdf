@@ -4,7 +4,7 @@
     <em:id>{52a7f893-d228-412e-9b28-bc61491462f6}</em:id>
     <em:type>2</em:type>
     <em:name>Encrypted Communication</em:name>
-    <em:version>1.5.2</em:version>
+    <em:version>1.5.3</em:version>
     <em:creator>Diego Casorran</em:creator>
     <em:contributor>Chris Veness</em:contributor>
     <em:description>Encrypts messages in forms to be transmitted in a confidential way, mainly to send E-Mails with sensitive data.</em:description>

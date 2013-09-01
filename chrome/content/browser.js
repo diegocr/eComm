@@ -38,7 +38,7 @@
 
 const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = {}, eComm = {
 	
-	pkg:'Encrypted Communication 1.5.0',
+	pkg:'Encrypted Communication 1.5.3',
 	msgHdr: ""
 		+ "--- This message has been encrypted using eComm Mozilla Firefox Extension\n"
 		+ "--- You need to have this extension installed in your browser to decrypt it\n"
@@ -173,7 +173,8 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 						o.value = o.textContent = c;
 					} else {
 						// [YG]mail requires \n -> <br>\n - hopefully no side effects on other sites!
-						c = c.replace(/\n/g,"<br>\n");
+						if(o.nodeName !== 'PRE')
+							c = c.replace(/\n/g,"<br/>\n");
 						
 						o.innerHTML = c;
 					}

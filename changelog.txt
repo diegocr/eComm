@@ -1,4 +1,11 @@
 
+1.5.2  Sep  1 2013
+	
+	* Fixed line ending being stripped when decrypting.
+	
+	Thanks to JRobert for reporting the issue.
+
+
 1.5  Aug 19 2013
 
 	* Added support for elements with the 'contenteditable' attribute set.
