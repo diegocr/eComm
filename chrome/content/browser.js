@@ -166,7 +166,7 @@ const Cc = Components.classes,Ci = Components.interfaces,Aes = {Ctr:{}}, Utf8 = 
 				}
 				
 				try {
-					c = this.nohtml(c);
+					c = this.nohtml(c.replace(/(?:<br\s*\/?\s*>)?\r?\n/gi,"<br/>"));
 					
 					if(o.nodeName == 'TEXTAREA') {
 						// o.value = o.textContent = c.replace(/\<br\s*\/?\s*\>\n?/gi,"\n").replace(/\<\/?\w[^>]+\>|&nbsp;/g,"");
